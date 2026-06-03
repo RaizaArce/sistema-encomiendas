@@ -10,6 +10,8 @@ urlpatterns = [
     path('admin/',    admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # login/logout built-in
     path('',          include('envios.urls')),               # incluye login/logout propios
+    path('api/v1/',   include('api.urls')),
+    path('api/<version>/', include('api.urls')),
 ]
 
 if settings.DEBUG:
