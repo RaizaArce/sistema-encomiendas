@@ -60,6 +60,19 @@ class EncomiendaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['codigo', 'fecha_registro']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['estado_display'] = instance.get_estado_display()
+        return data
+
+    def to_internal_value(self, data):
+        data = data.copy() if hasattr(data, 'copy') else data
+        if 'codigo' not in data or not data['codigo']:
+            from django.utils import timezone
+            import uuid
+            data['codigo'] = f'ENC-{timezone.now().strftime("%Y%m%d")}-{str(uuid.uuid4())[:6].upper()}'
+        return super().to_internal_value(data)
+
     # Validaciones de campo
     def validate_peso_kg(self, value):
         if value <= 0:
@@ -82,7 +95,7 @@ class EncomiendaSerializer(serializers.ModelSerializer):
     def validate(self, data):
         errors = {}
 
-        if data.get('remitente') == data.get('destinatario'):
+        if data.get('remitente') and data.get('destinatario') and data['remitente'] == data['destinatario']:
             errors['destinatario'] = 'El destinatario no puede ser el mismo que el remitente.'
 
         fecha_est = data.get('fecha_entrega_est')
@@ -134,6 +147,48 @@ class EncomiendaDetailSerializer(serializers.ModelSerializer):
 
     def get_historial(self, obj):
         return HistorialEstadoSerializer(obj.historial.all()[:5], many=True).data
+
+
+class EncomiendaListSerializer(serializers.ModelSerializer):
+    remitente_nombre  = serializers.ReadOnlyField(source='remitente.nombre_completo')
+    destinatario_nombre = serializers.ReadOnlyField(source='destinatario.nombre_completo')
+    estado_display    = serializers.ReadOnlyField(source='get_estado_display')
+    ruta_origen       = serializers.ReadOnlyField(source='ruta.origen')
+    ruta_destino      = serializers.ReadOnlyField(source='ruta.destino')
+    tiene_retraso     = serializers.ReadOnlyField()
+    dias_en_transito  = serializers.ReadOnlyField()
+
+    class Meta:
+        model  = Encomienda
+        fields = [
+            'id', 'codigo', 'descripcion', 'peso_kg',
+            'remitente_nombre', 'destinatario_nombre',
+            'estado', 'estado_display',
+            'ruta_origen', 'ruta_destino',
+            'costo_envio', 'fecha_registro',
+            'fecha_entrega_est', 'tiene_retraso', 'dias_en_transito',
+        ]
+
+
+class EncomiendaBulkSerializer(serializers.Serializer):
+    encomiendas = EncomiendaSerializer(many=True)
+
+    def create(self, validated_data):
+        encomiendas_data = validated_data.get('encomiendas', [])
+        request = self.context.get('request')
+        empleado = request.user.empleado if request and hasattr(request.user, 'empleado') else None
+
+        instances = []
+        errors = []
+        for i, data in enumerate(encomiendas_data):
+            s = EncomiendaSerializer(data=data, context=self.context)
+            if s.is_valid():
+                instance = s.save(empleado_registro=empleado)
+                instances.append(instance)
+            else:
+                errors.append({'index': i, 'errors': s.errors})
+
+        return {'created': instances, 'errors': errors}
 
 
 class EncomiendaV2Serializer(serializers.ModelSerializer):

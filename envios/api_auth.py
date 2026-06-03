@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from api.throttles import LoginRateThrottle
 
 
 # ── JWT personalizado con datos del empleado ───────────────────────
@@ -30,6 +31,7 @@ class EncomiendaTokenView(TokenObtainPairView):
 # ── Login con HttpOnly Cookies ────────────────────────────────────
 class LoginCookieView(APIView):
     permission_classes = []
+    throttle_classes   = [LoginRateThrottle]
 
     def post(self, request):
         user = authenticate(

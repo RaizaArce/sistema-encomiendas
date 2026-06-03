@@ -96,6 +96,88 @@ Implementar paso a paso el sistema siguiendo las guías del curso, sin desviarse
 - Eliminado `templates/registration/` (innecesario).
 - Creado helper `_get_empleado()` en `views.py` para evitar error 500 cuando un usuario Django no tiene registro `Empleado` asociado.
 
+### Sesión 05 — Django REST Framework (API)
+
+#### API REST
+- **Endpoints**: `/api/v1/auth/token/` (JWT login), `/api/v1/encomiendas/` (CRUD), `/api/v1/clientes/`, `/api/v1/rutas/`.
+- **Authentication**: JWT via `rest_framework_simplejwt` con tokens rotados y blacklist.
+- **Permissions**: `EsEmpleadoActivo` (solo empleados con `estado=1`), `EsPropietarioOAdmin` (solo dueño o staff en write).
+- **Versioning**: URL path (`/api/v1/`, `/api/v2/`). V2 agrega `meta` con `version` y `puede_editar`.
+- **Pagination**: `EncomiendaPagination` (15/page, configurable vía `page_size`).
+- **Filters**: `EncomiendaFilter` (estado, fechas, ruta, remitente, retraso) + `SearchFilter` + `OrderingFilter`.
+- **Throttling**: `LoginRateThrottle` (5/min) en login, `CambioEstadoThrottle` (30/h) en cambios de estado.
+- **Exception handler**: `api/exceptions.py` — respuestas uniformes `{error, status_code, message, errors}`.
+
+#### Serializers
+| Serializer | Uso |
+|-----------|-----|
+| `EncomiendaSerializer` | Create/update, con validación cruzada y autogeneración de `codigo` |
+| `EncomiendaDetailSerializer` | Retrieve (incluye objetos anidados Cliente, Ruta, historial) |
+| `EncomiendaListSerializer` | List (13 campos planos, evita N+1) |
+| `EncomiendaBulkSerializer` | Bulk create con errores por índice |
+| `EncomiendaV2Serializer` | Version v2 con campos extra |
+| `HistorialEstadoSerializer` | Historial de cambios de estado |
+
+#### Vistas extra (ViewSet actions)
+- `POST /api/v1/encomiendas/{id}/cambiar_estado/` — Cambia estado y registra historial
+- `GET /api/v1/encomiendas/con_retraso/` — Encomiendas con fecha estimada vencida
+- `GET /api/v1/encomiendas/pendientes/` — Encomiendas en estado Pendiente
+- `GET /api/v1/encomiendas/{id}/historial/` — Historial paginado de cambios
+- `GET /api/v1/encomiendas/estadisticas/` — Conteos: activas, tránsito, retraso, entregadas hoy
+- `POST /api/v1/encomiendas/bulk_create/` — Creación masiva (vía `EncomiendaBulkSerializer`)
+- `POST /api/v1/encomiendas/bulk_estado/` — Cambio de estado masivo por lista de IDs
+- `POST /api/v1/auth/token/blacklist/` — Invalidar refresh token
+
+#### Documentación
+- Swagger UI: `/api/v1/docs/`
+- Redoc: `/api/v1/redoc/`
+- Schema OpenAPI 3.0: `/api/v1/schema/`
+- Generado con `drf-spectacular`.
+
+#### Optimización N+1
+- `get_queryset()` usa `.only()` en `list` + `select_related('empleado_registro')` en `con_relaciones()`.
+- `EncomiendaListSerializer` usa `source` plana en vez de serializers anidados.
+
+#### Redis + Caching
+- Redis 7-alpine como servicio Docker.
+- `django-redis` como backend de caché (15 min TTL).
+- `cache_page` removido del ViewSet para evitar datos inconsistentes entre requests.
+
+#### django-silk (profiling)
+- Middleware `SilkyMiddleware` (antes de CommonMiddleware).
+- Captura el 25% del tráfico, máx 100 requests.
+- Requiere autenticación (staff). UI en `/silk/` (solo en DEBUG).
+
+#### Testing (pytest)
+- **26 tests, 2 skip, 0 failures** — suite completa en ~21s.
+- Framework: `pytest` + `pytest-django` + `factory-boy`.
+- Fixtures: `user_admin`, `empleado`, `cliente`, `ruta`, `encomienda`, `token`, `auth_client`.
+- Fixture autouse `_test_settings`: sobreescribe throttle rates y remueve SilkMiddleware.
+- `conftest.py` con 12 fixtures.
+- `api/tests.py` con 7 clases: `TestAuth` (5 tests), `TestEncomiendas` (12 tests), `TestClientes`, `TestRutas`, `TestVersioning`, `TestBulk`, `TestDocs`.
+
+#### Archivos creados/modificados
+| Archivo | Cambio |
+|---------|--------|
+| `api/` | App nueva con urls, permissions, throttles, exceptions, filters, pagination |
+| `api/tests.py` | 28 tests de API |
+| `conftest.py` | Fixtures de pytest |
+| `pytest.ini` | Configuración de pytest |
+| `envios/serializers.py` | 6 serializers (Encomienda, Detail, List, Bulk, V2, Historial) |
+| `envios/viewsets.py` | EncomiendaViewSet con 8 actions, permisos dinámicos, N+1 optimization |
+| `envios/api_auth.py` | Login con HttpOnly cookies + JWT personalizado |
+| `config/settings.py` | DRF config, JWT blacklist, Redis cache, silk, exception handler |
+| `config/urls.py` | URLs de silk (DEBUG), router API v1/v2 |
+| `docker-compose.yml` | Servicio redis:7-alpine |
+| `requirements.txt` | django-redis, django-silk, pytest, pytest-django, factory-boy |
+
+#### Estado actual del proyecto
+```
+26 passed, 2 skipped, 10 warnings in 21s
+Schema: 0 errors, 11 warnings (10 type hints, 1 enum collision)
+Check: 0 errors, 16 deploy warnings (esperados en desarrollo)
+```
+
 ---
 
 ## Decisiones Técnicas

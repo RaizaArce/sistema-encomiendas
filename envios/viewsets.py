@@ -3,11 +3,18 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse, OpenApiExample
+from django.conf import settings
 
 from .models import Encomienda, Empleado
-from .serializers import EncomiendaSerializer, EncomiendaDetailSerializer, EncomiendaV2Serializer, HistorialEstadoSerializer
+from .serializers import (
+    EncomiendaSerializer, EncomiendaDetailSerializer,
+    EncomiendaV2Serializer, HistorialEstadoSerializer,
+    EncomiendaListSerializer, EncomiendaBulkSerializer,
+)
 from api.pagination import EncomiendaPagination, HistorialPagination
 from api.filters import EncomiendaFilter
+from api.permissions import EsEmpleadoActivo, EsPropietarioOAdmin
+from api.throttles import CambioEstadoThrottle
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -23,7 +30,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 class EncomiendaViewSet(viewsets.ModelViewSet):
     queryset            = Encomienda.objects.con_relaciones()
     serializer_class    = EncomiendaSerializer
-    permission_classes  = [IsAuthenticated]
+    permission_classes  = [IsAuthenticated, EsEmpleadoActivo]
     pagination_class    = EncomiendaPagination
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -32,13 +39,31 @@ class EncomiendaViewSet(viewsets.ModelViewSet):
     ordering_fields = ['fecha_registro', 'peso_kg', 'costo_envio']
     ordering        = ['-fecha_registro']
 
+    def get_permissions(self):
+        permissions = super().get_permissions()
+        if self.action in ['update', 'partial_update', 'destroy']:
+            permissions.append(EsPropietarioOAdmin())
+        return permissions
+
     def get_serializer_class(self):
         version = getattr(self.request, 'version', 'v1')
         if version == 'v2':
             return EncomiendaV2Serializer
         if self.action == 'retrieve':
             return EncomiendaDetailSerializer
+        if self.action == 'list':
+            return EncomiendaListSerializer
         return EncomiendaSerializer
+
+    def get_queryset(self):
+        qs = Encomienda.objects.con_relaciones()
+        if self.action == 'list':
+            qs = qs.only(
+                'id', 'codigo', 'descripcion', 'peso_kg',
+                'remitente', 'destinatario', 'ruta', 'empleado_registro',
+                'estado', 'costo_envio', 'fecha_registro', 'fecha_entrega_est',
+            )
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(empleado_registro=self.request.user.empleado)
@@ -59,7 +84,7 @@ class EncomiendaViewSet(viewsets.ModelViewSet):
         ],
         tags=['Encomiendas'],
     )
-    @action(detail=True, methods=['post'], url_path='cambiar_estado')
+    @action(detail=True, methods=['post'], url_path='cambiar_estado', throttle_classes=[CambioEstadoThrottle])
     def cambiar_estado(self, request, pk=None):
         enc          = self.get_object()
         nuevo_estado = request.data.get('estado')
@@ -109,3 +134,61 @@ class EncomiendaViewSet(viewsets.ModelViewSet):
             'con_retraso':    Encomienda.objects.con_retraso().count(),
             'entregadas_hoy': Encomienda.objects.filter(estado='EN', fecha_entrega_real=hoy).count(),
         })
+
+    # POST /encomiendas/bulk_create/
+    @extend_schema(
+        summary='Crear multiples encomiendas',
+        request=EncomiendaBulkSerializer,
+        responses={201: EncomiendaSerializer(many=True)},
+        tags=['Encomiendas'],
+    )
+    @action(detail=False, methods=['post'], url_path='bulk_create')
+    def bulk_create(self, request):
+        serializer = EncomiendaBulkSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+        return Response({
+            'created': EncomiendaSerializer(result['created'], many=True).data,
+            'errors': result['errors'],
+        }, status=status.HTTP_201_CREATED)
+
+    # POST /encomiendas/bulk_estado/
+    @extend_schema(
+        summary='Cambiar estado a multiples encomiendas',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'encomienda_ids': {'type': 'array', 'items': {'type': 'integer'}},
+                    'estado': {'type': 'string'},
+                    'observacion': {'type': 'string'},
+                },
+                'required': ['encomienda_ids', 'estado'],
+            }
+        },
+        tags=['Encomiendas'],
+    )
+    @action(detail=False, methods=['post'], url_path='bulk_estado')
+    def bulk_estado(self, request):
+        ids = request.data.get('encomienda_ids', [])
+        nuevo_estado = request.data.get('estado')
+        observacion = request.data.get('observacion', '')
+
+        if not ids or not nuevo_estado:
+            return Response({'error': 'encomienda_ids y estado son requeridos.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            empleado = Empleado.objects.get(email=request.user.email)
+        except Empleado.DoesNotExist:
+            return Response({'error': 'Empleado no encontrado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        results = []
+        for pk in ids:
+            try:
+                enc = Encomienda.objects.get(pk=pk)
+                enc.cambiar_estado(nuevo_estado, empleado, observacion)
+                results.append({'id': pk, 'codigo': enc.codigo, 'success': True})
+            except Exception as e:
+                results.append({'id': pk, 'success': False, 'error': str(e)})
+
+        return Response({'results': results})
