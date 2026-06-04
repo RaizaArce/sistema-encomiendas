@@ -1,10 +1,11 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark">
   <div class="container">
     <a class="navbar-brand" href="{% url 'dashboard' %}">
-      <i class="fas fa-shipping-fast me-2"></i>Encomiendas
+      <span class="brand-icon"><i class="fas fa-box"></i></span>
+      <span>EnvíosExpress</span>
     </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
 
@@ -12,42 +13,49 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'dashboard' %}">
-            Dashboard
-            <span class="badge bg-secondary">{{ nav_activas }}</span>
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+            <span class="badge bg-warning text-dark">{{ nav_activas }}</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'encomienda_lista' %}">
-            Encomiendas
+          <a class="nav-link {% if request.resolver_match.url_name == 'encomienda_lista' %}active{% endif %}" href="{% url 'encomienda_lista' %}">
+            <i class="fas fa-boxes"></i> Encomiendas
             {% if nav_retraso > 0 %}
-            <span class="badge bg-danger rounded-pill">{{ nav_retraso }}</span>
+            <span class="badge rounded-pill" style="background:rgba(220,38,38,.2);color:#f87171;font-size:.6rem;">{{ nav_retraso }}</span>
             {% endif %}
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'encomienda_crear' %}">Nueva</a>
+          <a class="nav-link {% if request.resolver_match.url_name == 'encomienda_crear' %}active{% endif %}" href="{% url 'encomienda_crear' %}">
+            <i class="fas fa-plus-circle"></i> Nueva
+          </a>
         </li>
       </ul>
       <div class="d-flex">
         <div class="dropdown">
-          <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            <i class="fas fa-user me-1"></i>{{ user.username }}
+          <button class="btn btn-sm d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                  style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;border-radius:.5rem;padding:.375rem.75rem;">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+                  style="width:26px;height:26px;background:linear-gradient(135deg,#dc5f00,#f97316);font-size:.7rem;">{{ user.username|first|upper }}</span>
+            <span class="d-none d-md-inline">{{ user.username }}</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            {% if user.is_staff %}
-            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="fas fa-cog me-2"></i>Administración</a></li>
-            {% endif %}
-            <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="fas fa-id-card me-2"></i>Mi Perfil</a></li>
+            <li><h6 class="dropdown-header">{{ user.get_full_name|default:user.username }}</h6></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Salir</a></li>
+            {% if user.is_staff %}
+            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="fas fa-cog"></i> Administración</a></li>
+            {% endif %}
+            <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="fas fa-id-card"></i> Mi Perfil</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Salir</a></li>
           </ul>
         </div>
       </div>
     </div>
     {% else %}
-    <a href="{% url 'login' %}" class="btn btn-outline-light ms-auto">
-      <i class="fas fa-sign-in-alt me-1"></i>Iniciar sesión
+    <a href="{% url 'login' %}" class="btn btn-outline-light ms-auto d-flex align-items-center gap-2" style="border-color:rgba(255,255,255,.2);">
+      <i class="fas fa-sign-in-alt"></i> Iniciar sesión
     </a>
     {% endif %}
   </div>

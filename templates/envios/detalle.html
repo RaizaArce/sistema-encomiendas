@@ -3,113 +3,141 @@
 {% block title %}{{ encomienda.codigo }} — Detalle{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="h3">
-    <i class="fas fa-box me-2"></i>{{ encomienda.codigo }}
-  </h2>
+<div class="page-header d-flex justify-content-between align-items-center">
   <div>
-    <a href="{% url 'encomienda_lista' %}" class="btn btn-outline-secondary me-2">
-      Volver
+    <h2 class="d-flex align-items-center gap-3">
+      <span class="d-inline-flex align-items-center justify-content-center rounded-2 text-white"
+            style="width:36px;height:36px;background:linear-gradient(135deg,#dc5f00,#f97316);font-size:.9rem;">
+        <i class="fas fa-box"></i>
+      </span>
+      <span>{{ encomienda.codigo }}</span>
+    </h2>
+    <p class="page-subtitle">Detalle de la encomienda</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'encomienda_lista' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Volver
     </a>
-    {# Solo mostrar si no esta entregada ni devuelta #}
     {% if not encomienda.esta_entregada %}
-    <button class="btn btn-warning" data-bs-toggle="modal"
-            data-bs-target="#modalEstado">
-      Cambiar estado
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalEstado">
+      <i class="fas fa-edit"></i> Cambiar estado
     </button>
     {% endif %}
   </div>
 </div>
 
 <div class="row">
-  {# Columna izquierda: datos principales #}
   <div class="col-md-8">
-    <div class="card shadow mb-4">
-      <div class="card-header bg-white d-flex justify-content-between">
-        <h5 class="mb-0">Informacion de la encomienda</h5>
-        <span class="badge-estado badge-{{ encomienda.estado }}">
-          {{ encomienda.get_estado_display }}
-        </span>
+    <div class="card shadow-sm mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Información de la encomienda</h5>
+        <span class="badge-estado badge-{{ encomienda.estado }}">{{ encomienda.get_estado_display }}</span>
       </div>
       <div class="card-body">
-        <div class="row mb-3">
+        <div class="row g-4">
           <div class="col-md-6">
-            <p class="text-muted mb-1">Remitente</p>
-            <h6>{{ encomienda.remitente.nombre_completo }}</h6>
+            <div class="detail-item">
+              <div class="detail-icon" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1d4ed8;"><i class="fas fa-user"></i></div>
+              <div>
+                <div class="detail-label">Remitente</div>
+                <div class="detail-value">{{ encomienda.remitente.nombre_completo }}</div>
+              </div>
+            </div>
           </div>
           <div class="col-md-6">
-            <p class="text-muted mb-1">Destinatario</p>
-            <h6>{{ encomienda.destinatario.nombre_completo }}</h6>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-4">
-            <p class="text-muted mb-1">Ruta</p>
-            <h6>{{ encomienda.ruta }}</h6>
-          </div>
-          <div class="col-md-4">
-            <p class="text-muted mb-1">Peso</p>
-            <h6>{{ encomienda.peso_kg }} kg</h6>
+            <div class="detail-item">
+              <div class="detail-icon" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);color:#15803d;"><i class="fas fa-user"></i></div>
+              <div>
+                <div class="detail-label">Destinatario</div>
+                <div class="detail-value">{{ encomienda.destinatario.nombre_completo }}</div>
+              </div>
+            </div>
           </div>
           <div class="col-md-4">
-            <p class="text-muted mb-1">Costo</p>
-            <h6>S/ {{ encomienda.costo_envio|floatformat:2 }}</h6>
+            <div class="detail-item">
+              <div class="detail-icon" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#6d28d9;"><i class="fas fa-route"></i></div>
+              <div>
+                <div class="detail-label">Ruta</div>
+                <div class="detail-value">{{ encomienda.ruta }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="detail-item">
+              <div class="detail-icon" style="background:linear-gradient(135deg,#fff3e6,#ffedd5);color:#c2410c;"><i class="fas fa-weight"></i></div>
+              <div>
+                <div class="detail-label">Peso</div>
+                <div class="detail-value">{{ encomienda.peso_kg }} kg</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="detail-item">
+              <div class="detail-icon" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);color:#15803d;"><i class="fas fa-money-bill"></i></div>
+              <div>
+                <div class="detail-label">Costo de envío</div>
+                <div class="detail-value">S/ {{ encomienda.costo_envio|floatformat:2 }}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {# Alerta de retraso usando @property del modelo #}
         {% if encomienda.tiene_retraso %}
-        <div class="alert alert-danger mt-3">
-          <i class="fas fa-exclamation-triangle me-2"></i>
-          Esta encomienda tiene {{ encomienda.dias_en_transito }} dias en transito
-          y supero la fecha de entrega estimada.
+        <div class="alert alert-danger mt-4 mb-0">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Esta encomienda tiene <strong>{{ encomienda.dias_en_transito }} días</strong> en tránsito y superó la fecha de entrega estimada.</span>
         </div>
         {% endif %}
       </div>
     </div>
 
-    {# Historial de estados #}
-    <div class="card shadow">
-      <div class="card-header bg-white">
-        <h5 class="mb-0">Historial de estados</h5>
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0 d-flex align-items-center gap-2">
+          <i class="fas fa-history text-muted"></i>
+          Historial de cambios
+        </h5>
       </div>
-      <div class="card-body p-0">
-        <table class="table mb-0">
-          <thead>
-            <tr><th>Fecha</th><th>Anterior</th><th>Nuevo</th><th>Empleado</th><th>Observacion</th></tr>
-          </thead>
-          <tbody>
-            {% for h in historial %}
-            <tr>
-              <td>{{ h.fecha_cambio|date:'d/m/Y H:i' }}</td>
-              <td><span class="badge-estado badge-{{ h.estado_anterior }}">{{ h.get_estado_anterior_display }}</span></td>
-              <td><span class="badge-estado badge-{{ h.estado_nuevo }}">{{ h.get_estado_nuevo_display }}</span></td>
-              <td>{{ h.empleado }}</td>
-              <td>{{ h.observacion|default:'—' }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5">Sin cambios registrados</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="card-body">
+        {% if historial %}
+        <div class="timeline">
+          {% for h in historial %}
+          <div class="timeline-item">
+            <div class="timeline-date">
+              <i class="far fa-clock me-1"></i>{{ h.fecha_cambio|date:'d/m/Y H:i' }}
+              <span class="text-muted ms-2">— por {{ h.empleado }}</span>
+            </div>
+            <div class="timeline-content">
+              <span class="badge-estado badge-{{ h.estado_anterior }}">{{ h.get_estado_anterior_display }}</span>
+              <i class="fas fa-arrow-right mx-2 text-muted small"></i>
+              <span class="badge-estado badge-{{ h.estado_nuevo }}">{{ h.get_estado_nuevo_display }}</span>
+              {% if h.observacion %}
+              <div class="mt-1"><small class="text-muted"><i class="far fa-comment me-1"></i>{{ h.observacion }}</small></div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center mb-0 py-2">Sin cambios registrados</p>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-{# Modal para cambiar estado #}
 <div class="modal fade" id="modalEstado" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post" action="{% url 'encomienda_cambiar_estado' encomienda.pk %}">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title">Cambiar estado</h5>
+          <h5 class="modal-title"><i class="fas fa-edit me-2 text-primary"></i>Cambiar estado</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <p>Encomienda: <strong>{{ encomienda.codigo }}</strong></p>
-          <p>Estado actual: <span class="badge-estado badge-{{ encomienda.estado }}">{{ encomienda.get_estado_display }}</span></p>
+          <p class="mb-2">Encomienda: <strong>{{ encomienda.codigo }}</strong></p>
+          <p class="mb-3">Estado actual: <span class="badge-estado badge-{{ encomienda.estado }}">{{ encomienda.get_estado_display }}</span></p>
           <div class="mb-3">
             <label class="form-label">Nuevo estado</label>
             <select name="estado" id="selectEstado" class="form-select">
@@ -120,8 +148,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Cambiar estado</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>Cambiar estado</button>
         </div>
       </form>
     </div>

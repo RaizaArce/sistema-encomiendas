@@ -1,20 +1,43 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Iniciar Sesion — Encomiendas{% endblock %}
+{% block title %}Iniciar Sesión — EnvíosExpress{% endblock %}
+
+{% block main_class %}container-fluid p-0{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-  <div class="col-md-5">
-    <div class="text-center mb-4">
-      <i class="fas fa-box-open fa-4x text-primary mb-3"></i>
-      <h2>Sistema de Encomiendas</h2>
-      <p class="text-muted">Ingresa tus credenciales para continuar</p>
+<div class="login-page">
+  <div class="row g-0 w-100">
+    <div class="col-md-6 login-brand">
+      <div class="bg-shapes">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="brand-icon"><i class="fas fa-box"></i></div>
+      <h2>EnvíosExpress</h2>
+      <p class="brand-sub">Plataforma inteligente de gestión de encomiendas. Controla, rastrea y administra todos tus envíos en tiempo real.</p>
+      <div class="brand-features">
+        <div><i class="fas fa-truck"></i><small>Rastreo</small></div>
+        <div><i class="fas fa-bolt"></i><small>Tiempo real</small></div>
+        <div><i class="fas fa-shield-alt"></i><small>Seguro</small></div>
+      </div>
     </div>
-    <div class="card shadow">
-      <div class="card-body p-4">
+    <div class="col-md-6 login-form">
+      <div class="login-form-inner">
+        <div class="login-logo-mobile align-items-center gap-3 mb-4">
+          <span class="d-inline-flex align-items-center justify-content-center rounded-3 text-white" style="width:48px;height:48px;background:linear-gradient(135deg,#dc5f00,#f97316);font-size:1.25rem;"><i class="fas fa-box"></i></span>
+          <div>
+            <h4 class="mb-0 fw-bold">EnvíosExpress</h4>
+            <small class="text-muted">Gestión de encomiendas</small>
+          </div>
+        </div>
+
+        <h4 class="fw-bold mb-1">Bienvenido</h4>
+        <p class="text-muted mb-4">Ingresa tus credenciales para acceder al sistema.</p>
+
         {% if form.errors %}
-        <div class="alert alert-danger">
-          <i class="fas fa-exclamation-triangle me-2"></i>Usuario o contrasena incorrectos
+        <div class="alert alert-danger shadow-sm">
+          <i class="fas fa-exclamation-circle"></i> Usuario o contraseña incorrectos.
         </div>
         {% endif %}
 
@@ -29,16 +52,16 @@
             </div>
           </div>
           <div class="mb-4">
-            <label class="form-label">Contrasena</label>
+            <label class="form-label">Contraseña</label>
             <div class="input-group">
               <span class="input-group-text"><i class="fas fa-lock"></i></span>
               <input type="password" name="password" class="form-control"
-                     placeholder="Tu contrasena" required>
+                     placeholder="Tu contraseña" required>
             </div>
           </div>
           <div class="d-grid">
             <button type="submit" class="btn btn-primary btn-lg">
-              <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesion
+              <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
             </button>
           </div>
           <input type="hidden" name="next" value="{{ next }}">

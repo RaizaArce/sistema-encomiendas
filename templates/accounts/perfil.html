@@ -1,37 +1,42 @@
 {% extends 'base.html' %}
 
-{% block title %}Mi Perfil{% endblock %}
+{% block title %}Mi Perfil — EnvíosExpress{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow">
-      <div class="card-header bg-white">
-        <h4 class="mb-0"><i class="fas fa-user-circle me-2"></i>Mi Perfil</h4>
-      </div>
-      <div class="card-body">
-        <table class="table table-borderless">
-          <tr>
-            <th class="text-muted">Usuario</th>
-            <td>{{ user.username }}</td>
-          </tr>
-          <tr>
-            <th class="text-muted">Nombre</th>
-            <td>{{ user.get_full_name|default:'—' }}</td>
-          </tr>
-          <tr>
-            <th class="text-muted">Email</th>
-            <td>{{ user.email|default:'—' }}</td>
-          </tr>
-          <tr>
-            <th class="text-muted">Ultimo acceso</th>
-            <td>{{ user.last_login|date:'d/m/Y H:i'|default:'—' }}</td>
-          </tr>
-          <tr>
-            <th class="text-muted">Fecha de registro</th>
-            <td>{{ user.date_joined|date:'d/m/Y H:i' }}</td>
-          </tr>
-        </table>
+<div class="row justify-content-center mt-2 animate-in">
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-body text-center p-4">
+        <div class="profile-avatar">
+          {{ user.username|first|upper }}
+        </div>
+        <h4 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h4>
+        <p class="text-muted mb-0">@{{ user.username }}</p>
+
+        <div class="text-start mt-4 pt-3 border-top">
+          <table class="table table-borderless mb-0">
+            <tr>
+              <td class="text-muted ps-0 py-2"><i class="fas fa-user fa-fw me-2"></i>Usuario</td>
+              <td class="fw-semibold pe-0 text-end py-2">{{ user.username }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-0 py-2"><i class="fas fa-id-card fa-fw me-2"></i>Nombre</td>
+              <td class="fw-semibold pe-0 text-end py-2">{{ user.get_full_name|default:'—' }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-0 py-2"><i class="fas fa-envelope fa-fw me-2"></i>Email</td>
+              <td class="fw-semibold pe-0 text-end py-2">{{ user.email|default:'—' }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-0 py-2"><i class="fas fa-clock fa-fw me-2"></i>Último acceso</td>
+              <td class="fw-semibold pe-0 text-end py-2">{{ user.last_login|date:'d/m/Y H:i'|default:'—' }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-0 py-2 border-0"><i class="fas fa-calendar fa-fw me-2"></i>Fecha de registro</td>
+              <td class="fw-semibold pe-0 text-end py-2 border-0">{{ user.date_joined|date:'d/m/Y H:i' }}</td>
+            </tr>
+          </table>
+        </div>
       </div>
     </div>
   </div>

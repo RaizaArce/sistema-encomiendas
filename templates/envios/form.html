@@ -1,78 +1,104 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ titulo }} — Encomiendas{% endblock %}
+{% block title %}{{ titulo }} — EnvíosExpress{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="h3"><i class="fas fa-plus me-2"></i>{{ titulo }}</h2>
-  <a href="{% url 'encomienda_lista' %}" class="btn btn-outline-secondary">
-    <i class="fas fa-arrow-left me-1"></i>Volver
-  </a>
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h2><i class="fas fa-{% if 'editar' in request.path|lower %}edit{% else %}plus-circle{% endif %} me-2 text-gradient"></i>{{ titulo }}</h2>
+    <p class="page-subtitle">Completa los datos de la encomienda</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'encomienda_lista' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Volver
+    </a>
+  </div>
 </div>
 
-<div class="card shadow">
-  <div class="card-body">
+<div class="card shadow-sm">
+  <div class="card-body p-4">
     <form method="post" id="encomiendaForm">
       {% csrf_token %}
 
       {% if form.non_field_errors %}
-      <div class="alert alert-danger">
-        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      <div class="alert alert-danger shadow-sm">
+        {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
       </div>
       {% endif %}
 
-      <!-- Codigo y descripcion -->
-      <div class="row mb-3">
+      <div class="section-divider-label">
+        <i class="fas fa-tag"></i> Identificación
+      </div>
+      <div class="row g-3 mb-4">
         <div class="col-md-4">
-          <label class="form-label">Codigo *</label>
+          <label class="form-label">Código <span class="text-danger">*</span></label>
           {{ form.codigo }}
           {% if form.codigo.errors %}
           <div class="invalid-feedback d-block">{{ form.codigo.errors|join:", " }}</div>
           {% endif %}
         </div>
         <div class="col-md-8">
-          <label class="form-label">Descripcion *</label>
+          <label class="form-label">Descripción <span class="text-danger">*</span></label>
           {{ form.descripcion }}
         </div>
       </div>
 
-      <!-- Remitente y Destinatario -->
-      <div class="row mb-3">
+      <hr class="section-divider">
+
+      <div class="section-divider-label">
+        <i class="fas fa-users"></i> Partes
+      </div>
+      <div class="row g-3 mb-4">
         <div class="col-md-6">
-          <label class="form-label">Remitente *</label>
-          {{ form.remitente }}
+          <label class="form-label">Remitente <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            {{ form.remitente }}
+          </div>
           {% if form.remitente.errors %}
           <div class="invalid-feedback d-block">{{ form.remitente.errors }}</div>
           {% endif %}
         </div>
         <div class="col-md-6">
-          <label class="form-label">Destinatario *</label>
-          {{ form.destinatario }}
+          <label class="form-label">Destinatario <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            {{ form.destinatario }}
+          </div>
         </div>
       </div>
 
-      <!-- Ruta y Costo -->
-      <div class="row mb-3">
+      <hr class="section-divider">
+
+      <div class="section-divider-label">
+        <i class="fas fa-truck"></i> Envío
+      </div>
+      <div class="row g-3 mb-4">
         <div class="col-md-6">
-          <label class="form-label">Ruta *</label>
+          <label class="form-label">Ruta <span class="text-danger">*</span></label>
           {{ form.ruta }}
         </div>
         <div class="col-md-3">
-          <label class="form-label">Peso (kg) *</label>
+          <label class="form-label">Peso (kg) <span class="text-danger">*</span></label>
           {{ form.peso_kg }}
         </div>
         <div class="col-md-3">
-          <label class="form-label">Costo (S/) *</label>
-          {{ form.costo_envio }}
+          <label class="form-label">Costo (S/) <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text">S/</span>
+            {{ form.costo_envio }}
+          </div>
         </div>
       </div>
 
-      <!-- Botones -->
-      <div class="d-flex justify-content-end mt-4">
-        <button type="button" class="btn btn-outline-secondary me-2"
-                onclick="history.back()">Cancelar</button>
+      <hr class="section-divider">
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
         <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save me-1"></i>Guardar Encomienda
+          <i class="fas fa-save"></i> Guardar Encomienda
         </button>
       </div>
     </form>
