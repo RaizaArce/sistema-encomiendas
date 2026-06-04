@@ -2,6 +2,8 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from config.choices import EstadoGeneral, EstadoEnvio
 from clientes.models import Cliente
 from rutas.models import Ruta
@@ -209,6 +211,8 @@ class Encomienda(models.Model):
             empleado=empleado,
             observacion=observacion
         )
+
+        self._notificar_websocket(estado_anterior, nuevo_estado, empleado)
         return self
 
     def calcular_costo(self):
@@ -223,6 +227,38 @@ class Encomienda(models.Model):
         if self.peso_kg > PESO_BASE:
             costo += (self.peso_kg - PESO_BASE) * PRECIO_POR_KG_EXTRA
         return round(costo, 2)
+
+    def _notificar_websocket(self, estado_anterior, estado_nuevo, empleado):
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            return
+
+        mensaje = {
+            'type': 'encomienda_estado_cambio',
+            'encomienda_id': self.pk,
+            'codigo': self.codigo,
+            'estado_anterior': estado_anterior,
+            'estado_nuevo': estado_nuevo,
+            'empleado': str(empleado),
+            'timestamp': timezone.now().isoformat(),
+        }
+
+        async_to_sync(channel_layer.group_send)('encomiendas_global', mensaje)
+        async_to_sync(channel_layer.group_send)(f'encomienda_{self.pk}', mensaje)
+
+        hoy = timezone.now().date()
+        stats = {
+            'activas': Encomienda.objects.activas().count(),
+            'en_transito': Encomienda.objects.en_transito().count(),
+            'con_retraso': Encomienda.objects.con_retraso().count(),
+            'entregadas_hoy': Encomienda.objects.filter(
+                estado='EN', fecha_entrega_real=hoy
+            ).count(),
+        }
+        async_to_sync(channel_layer.group_send)(
+            'dashboard',
+            {'type': 'dashboard_actualizar', 'stats': stats}
+        )
 
     @classmethod
     def crear_con_costo_calculado(cls, remitente, destinatario, ruta,

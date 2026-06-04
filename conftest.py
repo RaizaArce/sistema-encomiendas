@@ -14,6 +14,7 @@ def _test_settings(settings):
     settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
         'anon': '1000/hour',
         'user': '10000/hour',
+        'empleado': '1000/hour',
         'cambio_estado': '1000/hour',
         'login_attempt': '1000/min',
     }

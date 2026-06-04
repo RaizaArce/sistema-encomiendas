@@ -1,3 +1,4 @@
+import redis
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -6,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
+from django.conf import settings
 
 from .models import Encomienda, Empleado
 from config.choices import EstadoEnvio
@@ -34,18 +36,15 @@ def dashboard(request):
     """Vista principal del sistema con estadisticas"""
     hoy = timezone.now().date()
 
-    # Tarjetas de estadisticas: tupla de (label, valor, color_bootstrap, icono_fa)
-    stats = [
-        ('Activas',      Encomienda.objects.activas().count(),      'primary',   'box'),
-        ('En transito',  Encomienda.objects.en_transito().count(),  'info',      'truck'),
-        ('Con retraso',  Encomienda.objects.con_retraso().count(),  'danger',    'exclamation-triangle'),
-        ('Entregadas hoy', Encomienda.objects.filter(
-                            estado=EstadoEnvio.ENTREGADO,
-                            fecha_entrega_real=hoy).count(),      'success',   'check-circle'),
-    ]
-
     context = {
-        'stats':   stats,
+        'stats': {
+            'activas':        Encomienda.objects.activas().count(),
+            'en_transito':    Encomienda.objects.en_transito().count(),
+            'con_retraso':    Encomienda.objects.con_retraso().count(),
+            'entregadas_hoy': Encomienda.objects.filter(
+                estado=EstadoEnvio.ENTREGADO, fecha_entrega_real=hoy
+            ).count(),
+        },
         'ultimas': Encomienda.objects.con_relaciones()[:5],
     }
     return render(request, 'envios/dashboard.html', context)
@@ -166,3 +165,52 @@ def encomienda_estado_json(request, pk):
         'retraso': enc.tiene_retraso,
         'dias':    enc.dias_en_transito,
     })
+
+
+def health_check(request):
+    estado = {
+        'postgres': False,
+        'redis': False,
+        'channels': False,
+    }
+
+    try:
+        from django.db import connection
+        connection.ensure_connection()
+        estado['postgres'] = True
+    except Exception as e:
+        estado['postgres_error'] = str(e)
+
+    try:
+        r = redis.from_url(
+            settings.REDIS_URL,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        r.ping()
+        info = r.info()
+        estado['redis'] = True
+        estado['redis_memoria'] = info.get('used_memory_human')
+        estado['redis_clientes'] = info.get('connected_clients')
+        estado['redis_version'] = info.get('redis_version')
+    except Exception as e:
+        estado['redis_error'] = str(e)
+
+    try:
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        cl = get_channel_layer()
+        async_to_sync(cl.group_send)('health_check', {'type': 'health.ping'})
+        estado['channels'] = True
+    except Exception as e:
+        estado['channels_error'] = str(e)
+
+    try:
+        r = redis.from_url(settings.REDIS_URL)
+        estado['empleados_conectados'] = r.scard('encomiendas:group:encomiendas_global')
+    except Exception:
+        estado['empleados_conectados'] = None
+
+    todo_ok = all([estado['postgres'], estado['redis'], estado['channels']])
+    http_status = 200 if todo_ok else 503
+    return JsonResponse(estado, status=http_status)

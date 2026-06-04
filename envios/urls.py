@@ -15,4 +15,7 @@ urlpatterns = [
     path('login/',                        views_auth.login_view,            name='login'),
     path('logout/',                       views_auth.logout_view,           name='logout'),
     path('perfil/',                       views_auth.perfil_view,           name='perfil'),
+
+    # Salud del sistema
+    path('health/',                       views.health_check,               name='health'),
 ]

@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
@@ -17,6 +18,8 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -134,9 +137,9 @@ MEDIA_URL  = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # ── Autenticacion ─────────────────────────────────────────────────
-LOGIN_URL = '/accounts/login/'
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 # ── Django REST Framework ───────────────────────────────────────────
 REST_FRAMEWORK = {
@@ -162,6 +165,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon':          '20/hour',
         'user':          '500/hour',
+        'empleado':      '100/min',
         'cambio_estado': '30/hour',
         'login_attempt': '5/min',
     },
@@ -213,6 +217,28 @@ CACHES = {
     }
 }
 CACHE_TTL = 60 * 15  # 15 minutos
+
+# ── Redis / Channel Layer (WebSockets) ────────────────────────────
+REDIS_URL = config('REDIS_URL', default='redis://redis:6379/1')
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL],
+            'capacity': 100,
+            'expiry': 60,
+            'prefix': 'encomiendas',
+        },
+    },
+}
+
+if 'pytest' in sys.modules or 'test' in sys.argv:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
 
 # ── Silk Profiling ────────────────────────────────────────────────
 SILKY_META = True

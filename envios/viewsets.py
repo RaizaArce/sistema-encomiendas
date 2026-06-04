@@ -14,7 +14,7 @@ from .serializers import (
 from api.pagination import EncomiendaPagination, HistorialPagination
 from api.filters import EncomiendaFilter
 from api.permissions import EsEmpleadoActivo, EsPropietarioOAdmin
-from api.throttles import CambioEstadoThrottle
+from api.throttles import EmpleadoRateThrottle, CambioEstadoThrottle
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -32,6 +32,7 @@ class EncomiendaViewSet(viewsets.ModelViewSet):
     serializer_class    = EncomiendaSerializer
     permission_classes  = [IsAuthenticated, EsEmpleadoActivo]
     pagination_class    = EncomiendaPagination
+    throttle_classes    = [EmpleadoRateThrottle]
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = EncomiendaFilter
